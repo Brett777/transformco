@@ -102,7 +102,7 @@ def mainPage():
         with st.spinner(text="Executing Query..."):
             with st.expander(label="Query Result", expanded=True):
                 answer = executeSnowflakeQuery(snowflakeSQL)
-                st.table(answer)
+                st.write(answer)
         with st.spinner(text="Analyzing..."):
             with st.expander(label="Analysis", expanded=True):
                 analysis = getBusinessAnalysis(prompt + str(snowflakeSQL) + str(answer))
