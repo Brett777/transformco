@@ -6,6 +6,7 @@ import datarobotx as drx
 import streamlit as st
 from snowflake.sqlalchemy import URL
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 
 st.set_page_config(page_title="TransformCo", layout="wide")
 
@@ -97,7 +98,7 @@ def mainPage():
         with st.spinner(text="Generating Query..."):
             with st.expander(label="Snowflake SQL", expanded=True):
                 snowflakeSQL = getSnowflakeSQL(prompt)
-                st.code(code=snowflakeSQL, language="sql")
+                st.code(body=snowflakeSQL, language="sql")
         with st.spinner(text="Executing Query..."):
             with st.expander(label="Query Result", expanded=True):
                 answer = executeSnowflakeQuery(snowflakeSQL)
