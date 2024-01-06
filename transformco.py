@@ -97,7 +97,7 @@ def mainPage():
         with st.spinner(text="Generating Query..."):
             with st.expander(label="Snowflake SQL", expanded=True):
                 snowflakeSQL = getSnowflakeSQL(prompt)
-                st.code(snowflakeSQL, language="sql")
+                st.code(code=snowflakeSQL, language="sql")
         with st.spinner(text="Executing Query..."):
             with st.expander(label="Query Result", expanded=True):
                 answer = executeSnowflakeQuery(snowflakeSQL)
