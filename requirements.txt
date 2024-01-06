@@ -4,3 +4,5 @@ datarobot
 datarobotx==0.1.20
 streamlit
 snowflake-connector-python
+snowflake-sqlalchemy==1.5.1
+sqlalchemy==1.4.49
