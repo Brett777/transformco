@@ -6,3 +6,4 @@ streamlit
 snowflake-connector-python
 snowflake-sqlalchemy==1.5.1
 sqlalchemy==1.4.49
+plotly
