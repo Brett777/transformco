@@ -102,7 +102,7 @@ def mainPage():
         with st.spinner(text="Executing Query..."):
             with st.expander(label="Query Result", expanded=True):
                 answer = executeSnowflakeQuery(snowflakeSQL)
-                if len(answer) > 0:
+                if answer is not None:
                     try:
                         st.dataframe(answer.reset_index(drop=True))
                     except Exception as e:
@@ -110,7 +110,7 @@ def mainPage():
                 else:
                     with st.spinner("My first attempt did not produce any data. Trying another approach..."):
                         answer = executeSnowflakeQuery(snowflakeSQL)
-                        if len(answer) > 0:
+                        if answer is not None:
                             try:
                                 st.dataframe(answer.reset_index(drop=True))
                             except Exception as e:
