@@ -102,7 +102,20 @@ def mainPage():
         with st.spinner(text="Executing Query..."):
             with st.expander(label="Query Result", expanded=True):
                 answer = executeSnowflakeQuery(snowflakeSQL)
-                st.dataframe(answer.reset_index(drop=True))
+                if len(answer) > 0:
+                    try:
+                        st.dataframe(answer.reset_index(drop=True))
+                    except Exception as e:
+                        st.write(e)
+                else:
+                    with st.spinner("My first attempt did not produce any data. Trying another approach..."):
+                        answer = executeSnowflakeQuery(snowflakeSQL)
+                        if len(answer) > 0:
+                            try:
+                                st.dataframe(answer.reset_index(drop=True))
+                            except Exception as e:
+                                st.write(e)
+                    st.write("The query produced no results")
         with st.spinner(text="Analyzing..."):
             with st.expander(label="Analysis", expanded=True):
                 analysis = getBusinessAnalysis(prompt + str(snowflakeSQL) + str(answer))
