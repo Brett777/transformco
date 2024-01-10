@@ -127,6 +127,19 @@ def mainPage():
                 st.dataframe(answer.reset_index(drop=True))
             else: st.write("Query produced no result")
 
+        with st.expander(label="Visualization", expanded=True):
+            import plotly.graph_objects as go
+
+            def create_plot(result_set):
+                result_set.columns = ['PLANNING_AREA_NAME', 'TOTAL_COMPLETES']
+                fig = go.Figure(data=go.Bar(x=result_set['PLANNING_AREA_NAME'], y=result_set['TOTAL_COMPLETES']))
+                fig.update_layout(title='Top 10 Planning Areas in Terms of Completes Over the Last 8 Weeks',
+                                  xaxis_title='Planning Area',
+                                  yaxis_title='Total Number of Completes')
+                return fig
+            fig = create_plot(answer)
+            st.plotly_chart(fig, use_container_width=True)
+
         with st.spinner(text="Analyzing..."):
             with st.expander(label="Analysis", expanded=True):
                 analysis = getBusinessAnalysis(prompt + str(snowflakeSQL) + str(answer))
