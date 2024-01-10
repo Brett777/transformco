@@ -112,10 +112,10 @@ def mainPage():
     if submitQuestion:
         attemptCount = 1
         snowflakeSQL, answer =  generateSQLandResult(prompt, attemptCount)
-        if answer is None:
+        if answer is None or answer.empty:
             attemptCount = 2
             snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
-        if answer is None:
+        if answer is None or answer.empty:
             attemptCount = 3
             snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
 
