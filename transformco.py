@@ -110,11 +110,14 @@ def mainPage():
     submitQuestion = st.button(label="Ask")
 
     if submitQuestion:
-        snowflakeSQL, answer =  generateSQLandResult(prompt, attemptCount=1)
+        attemptCount = 1
+        snowflakeSQL, answer =  generateSQLandResult(prompt, attemptCount)
         if answer is None:
-            snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount=2)
+            attemptCount = 2
+            snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
         if answer is None:
-            snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount=3)
+            attemptCount = 3
+            snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
 
         with st.expander(label="Snowflake SQL", expanded=True):
             st.code(body=snowflakeSQL, language="sql")
