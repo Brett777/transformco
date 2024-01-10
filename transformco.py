@@ -87,6 +87,21 @@ def getBusinessAnalysis(prompt):
 
     return predictions_response.json()["data"][0]["prediction"]
 
+def generateSQLandResult(prompt, attemptCount):
+
+    if attemptCount == 1:
+        spinnerText = ""
+    if attemptCount == 2:
+        spinnerText = "First try didn't work. Trying a new approach."
+    if attemptCount == 3:
+        spinnerText = "Second try didn't work. Trying another approach."
+
+    with st.spinner(text="Generating Query... " + spinnerText):
+        snowflakeSQL = getSnowflakeSQL(prompt)
+
+    with st.spinner(text="Executing Query..."):
+        answer = executeSnowflakeQuery(snowflakeSQL)
+    return snowflakeSQL, answer
 
 def mainPage():
     st.title("TransformCo")
@@ -95,31 +110,24 @@ def mainPage():
     submitQuestion = st.button(label="Ask")
 
     if submitQuestion:
-        with st.spinner(text="Generating Query..."):
-            with st.expander(label="Snowflake SQL", expanded=True):
-                snowflakeSQL = getSnowflakeSQL(prompt)
-                st.code(body=snowflakeSQL, language="sql")
-        with st.spinner(text="Executing Query..."):
-            with st.expander(label="Query Result", expanded=True):
-                answer = executeSnowflakeQuery(snowflakeSQL)
-                if answer is not None:
-                    try:
-                        st.dataframe(answer.reset_index(drop=True))
-                    except Exception as e:
-                        st.write(e)
-                else:
-                    with st.spinner("My first attempt did not produce any data. Trying another approach..."):
-                        answer = executeSnowflakeQuery(snowflakeSQL)
-                        if answer is not None:
-                            try:
-                                st.dataframe(answer.reset_index(drop=True))
-                            except Exception as e:
-                                st.write(e)
-                    st.write("The query produced no results")
+        snowflakeSQL, answer =  generateSQLandResult(prompt, attemptCount=1)
+        if answer is None:
+            snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount=2)
+        if answer is None:
+            snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount=3)
+
+        with st.expander(label="Snowflake SQL", expanded=True):
+            st.code(body=snowflakeSQL, language="sql")
+
+        with st.expander(label="Query Result", expanded=True):
+            if attemptCount <= 3:
+                st.dataframe(answer.reset_index(drop=True))
+            else: st.write("Query produced no result")
+
         with st.spinner(text="Analyzing..."):
             with st.expander(label="Analysis", expanded=True):
                 analysis = getBusinessAnalysis(prompt + str(snowflakeSQL) + str(answer))
-                st.markdown(analysis)
+                st.markdown(analysis.replace("$","\$"))
 
 
 
