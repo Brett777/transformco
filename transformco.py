@@ -155,7 +155,7 @@ def mainPage():
                 import plotly.graph_objects as go
 
                 chartCode = getChartCode(prompt + str(snowflakeSQL) + str(answer))
-                # st.text(chartCode.replace("```python","").replace("```",""))
+                st.text(chartCode.replace("```python","").replace("```",""))
                 chartCode = chartCode.replace("```python","").replace("```","")
                 function_dict = {}
                 exec(chartCode, function_dict) # execute the code created by our LLM
