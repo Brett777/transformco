@@ -156,12 +156,8 @@ def mainPage():
             chartCode = getChartCode(prompt + str(snowflakeSQL) + str(answer))
             st.text(chartCode.replace("```python","").replace("```",""))
             exec(chartCode.replace("```python","").replace("```",""))
-
-            # fig = create_plot(result_set)
-            # st.write(fig)
-            # fig.replace("```python","").replace("```","")
-            # st.write(fig)
-            # st.plotly_chart(fig, use_container_width=True)
+            fig = create_plot(result_set)
+            st.plotly_chart(fig, use_container_width=True)
 
 
         with st.spinner(text="Analyzing..."):
