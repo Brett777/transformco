@@ -162,26 +162,24 @@ def mainPage():
 
         with st.spinner(text="Visualizing..."):
             with st.expander(label="Visualization", expanded=True):
-                fig1, fig2 = createCharts(prompt + str(snowflakeSQL) + str(answer))
-                st.plotly_chart(fig1, use_container_width=True)
-                st.plotly_chart(fig2, use_container_width=True)
-                # attempt_count = 0
-                # max_attempts = 4
-                # while attempt_count < max_attempts:
-                #     try:
-                #         fig1, fig2 = createCharts(prompt + str(snowflakeSQL) + str(answer))
-                #         st.plotly_chart(fig1, use_container_width=True)
-                #         st.plotly_chart(fig2, use_container_width=True)
-                #         break # If operation succeeds, break out of the loop
-                #     except Exception as e:
-                #         attempt_count += 1
-                #         print(f"Chart Attempt {attempt_count} failed with error: {e}")
-                #     if attempt_count >= max_attempts:
-                #         print("Max charting attempts reached, handling the failure.")
-                #         st.write("I was unable to plot the data.")
-                #         # Handle the failure after the final attempt
-                #     else:
-                #         print("Retrying the charts...")
+
+                attempt_count = 0
+                max_attempts = 4
+                while attempt_count < max_attempts:
+                    try:
+                        fig1, fig2 = createCharts(prompt, snowflakeSQL, answer)
+                        st.plotly_chart(fig1, use_container_width=True)
+                        st.plotly_chart(fig2, use_container_width=True)
+                        break # If operation succeeds, break out of the loop
+                    except Exception as e:
+                        attempt_count += 1
+                        print(f"Chart Attempt {attempt_count} failed with error: {e}")
+                    if attempt_count >= max_attempts:
+                        print("Max charting attempts reached, handling the failure.")
+                        st.write("I was unable to plot the data.")
+                        # Handle the failure after the final attempt
+                    else:
+                        print("Retrying the charts...")
 
 
         with st.spinner(text="Analyzing..."):
