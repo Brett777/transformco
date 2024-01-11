@@ -157,6 +157,9 @@ def mainPage():
             exec(chartCode)
 
             fig = create_plot(result_set)
+            st.write(fig)
+            fig.replace("```python","").replace("```","")
+            st.write(fig)
             st.plotly_chart(fig, use_container_width=True)
 
 
