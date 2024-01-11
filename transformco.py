@@ -155,8 +155,11 @@ def mainPage():
 
             chartCode = getChartCode(prompt + str(snowflakeSQL) + str(answer))
             st.text(chartCode.replace("```python","").replace("```",""))
-            exec(chartCode.replace("```python","").replace("```",""))
-            fig = create_chart(result_set)
+            chartCode = chartCode.replace("```python","").replace("```","")
+            function_dict = {}
+            exec(chartCode, function_dict) # execute the code created by our LLM
+            create_chart = function_dict['create_chart'] # get the function that our code created
+            fig = create_chart(answer)
             st.plotly_chart(fig, use_container_width=True)
 
 
