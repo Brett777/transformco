@@ -154,10 +154,11 @@ def mainPage():
             import plotly.graph_objects as go
 
             chartCode = getChartCode(prompt + str(snowflakeSQL) + str(answer))
-            exec(chartCode)
+            st.write(chartCode)
+            # exec(chartCode)
 
-            fig = create_plot(result_set)
-            st.write(fig)
+            # fig = create_plot(result_set)
+            # st.write(fig)
             # fig.replace("```python","").replace("```","")
             # st.write(fig)
             # st.plotly_chart(fig, use_container_width=True)
