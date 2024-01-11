@@ -63,7 +63,6 @@ def executeSnowflakeQuery(snowflakeSQL):
         engine.dispose()
     return results
 
-
 def getBusinessAnalysis(prompt):
     '''
     Given the question, the Snowflake SQL, and the response, retrieve the business analysis and suggestions.
@@ -87,14 +86,38 @@ def getBusinessAnalysis(prompt):
 
     return predictions_response.json()["data"][0]["prediction"]
 
+def getChartCode(prompt):
+    '''
+        Given the question, the Snowflake SQL, and the response, retrieve the chart code.
+    '''
+    data = pd.DataFrame({"promptText": [prompt]})
+    API_URL = 'https://cfds-ccm-prod.orm.datarobot.com/predApi/v1.0/deployments/{deployment_id}/predictions'
+    API_KEY = os.environ["DATAROBOT_API_TOKEN"]
+    DATAROBOT_KEY = os.environ["DATAROBOT_KEY"]
+    deployment_id = '659f27d4c66e9cd86ce9133a'
+    headers = {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer {}'.format(API_KEY),
+        'DataRobot-Key': DATAROBOT_KEY,
+    }
+    url = API_URL.format(deployment_id=deployment_id)
+    predictions_response = requests.post(
+        url,
+        data=data.to_json(orient='records'),
+        headers=headers
+    )
+
+    return predictions_response.json()["data"][0]["prediction"]
+
+
 def generateSQLandResult(prompt, attemptCount):
 
     if attemptCount == 1:
         spinnerText = ""
     if attemptCount == 2:
-        spinnerText = "First try didn't work. Trying a new approach."
+        spinnerText = "Working on an a better approach..."
     if attemptCount == 3:
-        spinnerText = "Second try didn't work. Trying another approach."
+        spinnerText = "Trying a different solution..."
 
     with st.spinner(text="Generating Query... " + spinnerText):
         snowflakeSQL = getSnowflakeSQL(prompt)
@@ -130,15 +153,12 @@ def mainPage():
         with st.expander(label="Visualization", expanded=True):
             import plotly.graph_objects as go
 
-            def create_plot(result_set):
-                result_set.columns = ['PLANNING_AREA_NAME', 'TOTAL_COMPLETES']
-                fig = go.Figure(data=go.Bar(x=result_set['PLANNING_AREA_NAME'], y=result_set['TOTAL_COMPLETES']))
-                fig.update_layout(title='Top 10 Planning Areas in Terms of Completes Over the Last 8 Weeks',
-                                  xaxis_title='Planning Area',
-                                  yaxis_title='Total Number of Completes')
-                return fig
-            fig = create_plot(answer)
+            chartCode = getChartCode(prompt + str(snowflakeSQL) + str(answer))
+            exec(chartCode)
+
+            fig = create_plot(result_set)
             st.plotly_chart(fig, use_container_width=True)
+
 
         with st.spinner(text="Analyzing..."):
             with st.expander(label="Analysis", expanded=True):
