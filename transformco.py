@@ -111,7 +111,7 @@ def getChartCode(prompt):
 
 def createCharts(prompt, snowflakeSQL, answer):
     chartCode = getChartCode(prompt + str(snowflakeSQL) + str(answer))
-    # st.text(chartCode.replace("```python", "").replace("```", ""))
+    print(chartCode.replace("```python", "").replace("```", ""))
     chartCode = chartCode.replace("```python", "").replace("```", "")
     function_dict = {}
     exec(chartCode, function_dict)  # execute the code created by our LLM
@@ -152,10 +152,10 @@ def mainPage():
             attemptCount = 3
             snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
 
-        with st.expander(label="Snowflake SQL", expanded=True):
+        with st.expander(label="Snowflake SQL", expanded=False):
             st.code(body=snowflakeSQL, language="sql")
 
-        with st.expander(label="Query Result", expanded=True):
+        with st.expander(label="Query Result", expanded=False):
             if attemptCount <= 3:
                 st.dataframe(answer.reset_index(drop=True))
             else: st.write("Query produced no result")
