@@ -150,7 +150,7 @@ def mainPage():
                 st.dataframe(answer.reset_index(drop=True))
             else: st.write("Query produced no result")
 
-        with st.spinner(label="Visualizing..."):
+        with st.spinner(text="Visualizing..."):
             with st.expander(label="Visualization", expanded=True):
                 import plotly.graph_objects as go
 
