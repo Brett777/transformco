@@ -159,9 +159,10 @@ def mainPage():
                 chartCode = chartCode.replace("```python","").replace("```","")
                 function_dict = {}
                 exec(chartCode, function_dict) # execute the code created by our LLM
-                create_chart = function_dict['create_chart'] # get the function that our code created
-                fig = create_chart(answer)
-                st.plotly_chart(fig, use_container_width=True)
+                create_charts = function_dict['create_charts'] # get the function that our code created
+                fig1, fig2 = create_charts(answer)
+                st.plotly_chart(fig1, use_container_width=True)
+                st.plotly_chart(fig2, use_container_width=True)
 
 
         with st.spinner(text="Analyzing..."):
