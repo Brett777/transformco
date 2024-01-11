@@ -115,6 +115,7 @@ def createCharts(prompt, snowflakeSQL, answer):
     chartCode = chartCode.replace("```python", "").replace("```", "")
     function_dict = {}
     exec(chartCode, function_dict)  # execute the code created by our LLM
+    print("creating charts...")
     create_charts = function_dict['create_charts']  # get the function that our code created
     fig1, fig2 = create_charts(answer)
     return fig1, fig2
@@ -162,7 +163,7 @@ def mainPage():
         with st.spinner(text="Visualizing..."):
             with st.expander(label="Visualization", expanded=True):
                 attempt_count = 0
-                max_attempts = 3
+                max_attempts = 4
                 while attempt_count < max_attempts:
                     try:
                         fig1, fig2 = createCharts(prompt + str(snowflakeSQL) + str(answer))
@@ -174,6 +175,7 @@ def mainPage():
                         print(f"Chart Attempt {attempt_count} failed with error: {e}")
                     if attempt_count >= max_attempts:
                         print("Max charting attempts reached, handling the failure.")
+                        st.write("I was unable to plot the data.")
                         # Handle the failure after the final attempt
                     else:
                         print("Retrying the charts...")
