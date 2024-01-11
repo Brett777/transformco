@@ -150,17 +150,18 @@ def mainPage():
                 st.dataframe(answer.reset_index(drop=True))
             else: st.write("Query produced no result")
 
-        with st.expander(label="Visualization", expanded=True):
-            import plotly.graph_objects as go
+        with st.spinner(label="Visualizing..."):
+            with st.expander(label="Visualization", expanded=True):
+                import plotly.graph_objects as go
 
-            chartCode = getChartCode(prompt + str(snowflakeSQL) + str(answer))
-            st.text(chartCode.replace("```python","").replace("```",""))
-            chartCode = chartCode.replace("```python","").replace("```","")
-            function_dict = {}
-            exec(chartCode, function_dict) # execute the code created by our LLM
-            create_chart = function_dict['create_chart'] # get the function that our code created
-            fig = create_chart(answer)
-            st.plotly_chart(fig, use_container_width=True)
+                chartCode = getChartCode(prompt + str(snowflakeSQL) + str(answer))
+                st.text(chartCode.replace("```python","").replace("```",""))
+                chartCode = chartCode.replace("```python","").replace("```","")
+                function_dict = {}
+                exec(chartCode, function_dict) # execute the code created by our LLM
+                create_chart = function_dict['create_chart'] # get the function that our code created
+                fig = create_chart(answer)
+                st.plotly_chart(fig, use_container_width=True)
 
 
         with st.spinner(text="Analyzing..."):
