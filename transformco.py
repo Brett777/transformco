@@ -155,7 +155,7 @@ def mainPage():
 
             chartCode = getChartCode(prompt + str(snowflakeSQL) + str(answer))
             st.text(chartCode.replace("```python","").replace("```",""))
-            # exec(chartCode)
+            exec(chartCode.replace("```python","").replace("```",""))
 
             # fig = create_plot(result_set)
             # st.write(fig)
