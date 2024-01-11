@@ -109,6 +109,15 @@ def getChartCode(prompt):
 
     return predictions_response.json()["data"][0]["prediction"]
 
+def createCharts(prompt, snowflakeSQL, answer):
+    chartCode = getChartCode(prompt + str(snowflakeSQL) + str(answer))
+    # st.text(chartCode.replace("```python", "").replace("```", ""))
+    chartCode = chartCode.replace("```python", "").replace("```", "")
+    function_dict = {}
+    exec(chartCode, function_dict)  # execute the code created by our LLM
+    create_charts = function_dict['create_charts']  # get the function that our code created
+    fig1, fig2 = create_charts(answer)
+    return fig1, fig2
 
 def generateSQLandResult(prompt, attemptCount):
 
@@ -152,17 +161,22 @@ def mainPage():
 
         with st.spinner(text="Visualizing..."):
             with st.expander(label="Visualization", expanded=True):
-                import plotly.graph_objects as go
-
-                chartCode = getChartCode(prompt + str(snowflakeSQL) + str(answer))
-                st.text(chartCode.replace("```python","").replace("```",""))
-                chartCode = chartCode.replace("```python","").replace("```","")
-                function_dict = {}
-                exec(chartCode, function_dict) # execute the code created by our LLM
-                create_charts = function_dict['create_charts'] # get the function that our code created
-                fig1, fig2 = create_charts(answer)
-                st.plotly_chart(fig1, use_container_width=True)
-                st.plotly_chart(fig2, use_container_width=True)
+                attempt_count = 0
+                max_attempts = 3
+                while attempt_count < max_attempts:
+                    try:
+                        fig1, fig2 = createCharts(prompt + str(snowflakeSQL) + str(answer))
+                        st.plotly_chart(fig1, use_container_width=True)
+                        st.plotly_chart(fig2, use_container_width=True)
+                        break # If operation succeeds, break out of the loop
+                    except Exception as e:
+                        attempt_count += 1
+                        print(f"Chart Attempt {attempt_count} failed with error: {e}")
+                    if attempt_count >= max_attempts:
+                        print("Max charting attempts reached, handling the failure.")
+                        # Handle the failure after the final attempt
+                    else:
+                        print("Retrying the charts...")
 
 
         with st.spinner(text="Analyzing..."):
