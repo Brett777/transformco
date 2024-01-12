@@ -168,8 +168,8 @@ def mainPage():
                 while attempt_count < max_attempts:
                     try:
                         fig1, fig2 = createCharts(prompt, snowflakeSQL, answer)
-                        st.plotly_chart(fig1, use_container_width=True)
-                        st.plotly_chart(fig2, use_container_width=True)
+                        st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
+                        st.plotly_chart(fig2, theme="streamlit", use_container_width=True)
                         break # If operation succeeds, break out of the loop
                     except Exception as e:
                         attempt_count += 1
