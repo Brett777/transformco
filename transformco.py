@@ -4,11 +4,36 @@ from datetime import datetime, timedelta
 import os
 import datarobotx as drx
 import streamlit as st
+import streamlit_authenticator as stauth
 from snowflake.sqlalchemy import URL
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 
 st.set_page_config(page_title="TransformCo", layout="wide")
+
+# Define user credentials
+users = {
+    "kapil": {
+        "name": "kapil",
+        "password": os.environ["transformcoPwd"]
+    },
+    "chairman": {
+        "name": "chairman",
+        "password": os.environ["transformcoPwd"]
+    },
+    "brett": {
+        "name": "brett",
+        "password": os.environ["transformcoPwd"]
+    }
+}
+# Create an instance of the authenticator
+names = [user["name"] for user in users.values()]
+usernames = list(users.keys())
+passwords = [user["password"] for user in users.values()]
+
+hashed_passwords = stauth.Hasher(passwords).generate()
+
+authenticator = stauth.Authenticate(names, usernames, hashed_passwords,"some_cookie_name", "some_signature_key", cookie_expiry_days=30)
 
 
 def getSnowflakeSQL(prompt):
@@ -190,8 +215,6 @@ def mainPage():
 
 
 
-
-
 # Main app
 def _main():
     hide_streamlit_style = """
@@ -202,7 +225,16 @@ def _main():
     </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)  # This let's you hide the Streamlit branding
-    mainPage()
+
+    # Authentication
+    name, authentication_status, username = authenticator.login("Login", "main")
+
+    if authentication_status:
+        mainPage()
+    elif authentication_status == False:
+        st.error("Username/password is incorrect")
+    elif authentication_status == None:
+        st.warning("Please enter your username and password")
 
 
 if __name__ == "__main__":
