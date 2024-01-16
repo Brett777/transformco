@@ -8,33 +8,21 @@ import streamlit_authenticator as stauth
 from snowflake.sqlalchemy import URL
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
+import yaml
+from yaml.loader import SafeLoader
+
+with open('config.yaml') as file:
+    config = yaml.load(file, Loader=SafeLoader)
 
 st.set_page_config(page_title="TransformCo", layout="wide")
 
-# Define user credentials
-users = {
-    "kapil": {
-        "name": "kapil",
-        "password": os.environ["transformcoPwd"]
-    },
-    "chairman": {
-        "name": "chairman",
-        "password": os.environ["transformcoPwd"]
-    },
-    "brett": {
-        "name": "brett",
-        "password": os.environ["transformcoPwd"]
-    }
-}
-# Create an instance of the authenticator
-names = [user["name"] for user in users.values()]
-usernames = list(users.keys())
-passwords = [user["password"] for user in users.values()]
-
-hashed_passwords = stauth.Hasher(passwords).generate()
-
-authenticator = stauth.Authenticate(names, usernames, hashed_passwords,"some_cookie_name", "some_signature_key", cookie_expiry_days=30)
-
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days'],
+    config['preauthorized']
+)
 
 def getSnowflakeSQL(prompt):
     '''
@@ -162,56 +150,60 @@ def generateSQLandResult(prompt, attemptCount):
     return snowflakeSQL, answer
 
 def mainPage():
-    st.title("TransformCo")
-    st.subheader("Ask a question about the business.")
-    prompt = st.text_input(label="Question")
-    submitQuestion = st.button(label="Ask")
+    layout = st.container()
+    col1, col2 = layout.columns([9, 1])
+    with col1:
+        st.title("TransformCo")
+        st.subheader("Ask a question about the business.")
+        prompt = st.text_input(label="Question")
+        submitQuestion = st.button(label="Ask")
 
-    if submitQuestion:
-        attemptCount = 1
-        snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
-        if answer is None or answer.empty:
-            attemptCount = 2
+        if submitQuestion:
+            attemptCount = 1
             snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
-        if answer is None or answer.empty:
-            attemptCount = 3
-            snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
+            if answer is None or answer.empty:
+                attemptCount = 2
+                snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
+            if answer is None or answer.empty:
+                attemptCount = 3
+                snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
 
-        with st.expander(label="Snowflake SQL", expanded=False):
-            st.code(body=snowflakeSQL, language="sql")
+            with st.expander(label="Snowflake SQL", expanded=False):
+                st.code(body=snowflakeSQL, language="sql")
 
-        with st.expander(label="Query Result", expanded=False):
-            if attemptCount <= 3:
-                st.dataframe(answer.reset_index(drop=True))
-            else: st.write("Query produced no result")
+            with st.expander(label="Query Result", expanded=False):
+                if attemptCount <= 3:
+                    st.dataframe(answer.reset_index(drop=True))
+                else: st.write("Query produced no result")
 
-        with st.spinner(text="Visualizing..."):
-            with st.expander(label="Visualization", expanded=True):
+            with st.spinner(text="Visualizing..."):
+                with st.expander(label="Visualization", expanded=True):
 
-                attempt_count = 0
-                max_attempts = 4
-                while attempt_count < max_attempts:
-                    try:
-                        fig1, fig2 = createCharts(prompt, snowflakeSQL, answer)
-                        st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
-                        st.plotly_chart(fig2, theme="streamlit", use_container_width=True)
-                        break # If operation succeeds, break out of the loop
-                    except Exception as e:
-                        attempt_count += 1
-                        print(f"Chart Attempt {attempt_count} failed with error: {e}")
-                    if attempt_count >= max_attempts:
-                        print("Max charting attempts reached, handling the failure.")
-                        st.write("I was unable to plot the data.")
-                        # Handle the failure after the final attempt
-                    else:
-                        print("Retrying the charts...")
+                    attempt_count = 0
+                    max_attempts = 4
+                    while attempt_count < max_attempts:
+                        try:
+                            fig1, fig2 = createCharts(prompt, snowflakeSQL, answer)
+                            st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
+                            st.plotly_chart(fig2, theme="streamlit", use_container_width=True)
+                            break # If operation succeeds, break out of the loop
+                        except Exception as e:
+                            attempt_count += 1
+                            print(f"Chart Attempt {attempt_count} failed with error: {e}")
+                        if attempt_count >= max_attempts:
+                            print("Max charting attempts reached, handling the failure.")
+                            st.write("I was unable to plot the data.")
+                            # Handle the failure after the final attempt
+                        else:
+                            print("Retrying the charts...")
 
 
-        with st.spinner(text="Analyzing..."):
-            with st.expander(label="Analysis", expanded=True):
-                analysis = getBusinessAnalysis(prompt + str(snowflakeSQL) + str(answer))
-                st.markdown(analysis.replace("$","\$"))
-
+            with st.spinner(text="Analyzing..."):
+                with st.expander(label="Analysis", expanded=True):
+                    analysis = getBusinessAnalysis(prompt + str(snowflakeSQL) + str(answer))
+                    st.markdown(analysis.replace("$","\$"))
+    with col2:
+        authenticator.logout('Logout', 'main', key='unique_key')
 
 
 
@@ -227,14 +219,20 @@ def _main():
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)  # This let's you hide the Streamlit branding
 
     # Authentication
-    name, authentication_status, username = authenticator.login("Login", "main")
+    layout = st.container()
+    col1, col2, col3 = layout.columns([1,1,1])
+    with col2:
+        authenticator.login("Login", "main")
 
-    if authentication_status:
+    if st.session_state["authentication_status"]:
         mainPage()
-    elif authentication_status == False:
-        st.error("Username/password is incorrect")
-    elif authentication_status == None:
-        st.warning("Please enter your username and password")
+    elif st.session_state["authentication_status"] is False:
+        with col2:
+            st.error('Username/password is incorrect')
+    elif st.session_state["authentication_status"] is None:
+        with col2:
+            st.warning('Please enter your username and password')
+
 
 
 if __name__ == "__main__":
