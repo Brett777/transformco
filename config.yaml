@@ -1,0 +1,18 @@
+credentials:
+  usernames:
+    kapil:
+      email: Kapil.Kanagal@transformco.com
+      name: Kapil Kanagal
+      password: $2b$12$558Bsa1oP1hJtYHG/im2v.tNcIoka6XI8/pMjk.T8njd85qhlAvJ.
+    brett:
+      email: brett.olmstead@datarobot.com
+      name: Brett Olmstead
+      password: $2b$12$558Bsa1oP1hJtYHG/im2v.tNcIoka6XI8/pMjk.T8njd85qhlAvJ.
+cookie:
+  expiry_days: 7
+  key: some_signature_key
+  name: some_cookie_name
+preauthorized:
+  emails:
+    quncai.zou@datarobot.com
+    justin.anderson@datarobot.com
