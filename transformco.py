@@ -150,58 +150,58 @@ def generateSQLandResult(prompt, attemptCount):
     return snowflakeSQL, answer
 
 def mainPage():
-    layout = st.container()
-    col1, col2 = layout.columns([9, 1])
-    with col1:
-        st.title("TransformCo")
-        st.subheader("Ask a question about the business.")
-        prompt = st.text_input(label="Question")
-        submitQuestion = st.button(label="Ask")
+    # layout = st.container()
+    # col1, col2 = layout.columns([9, 1])
+    # with col1:
+    st.title("TransformCo")
+    st.subheader("Ask a question about the business.")
+    prompt = st.text_input(label="Question")
+    submitQuestion = st.button(label="Ask")
 
-        if submitQuestion:
-            attemptCount = 1
+    if submitQuestion:
+        attemptCount = 1
+        snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
+        if answer is None or answer.empty:
+            attemptCount = 2
             snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
-            if answer is None or answer.empty:
-                attemptCount = 2
-                snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
-            if answer is None or answer.empty:
-                attemptCount = 3
-                snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
+        if answer is None or answer.empty:
+            attemptCount = 3
+            snowflakeSQL, answer = generateSQLandResult(prompt, attemptCount)
 
-            with st.expander(label="Snowflake SQL", expanded=False):
-                st.code(body=snowflakeSQL, language="sql")
+        with st.expander(label="Snowflake SQL", expanded=False):
+            st.code(body=snowflakeSQL, language="sql")
 
-            with st.expander(label="Query Result", expanded=False):
-                if attemptCount <= 3:
-                    st.dataframe(answer.reset_index(drop=True))
-                else: st.write("Query produced no result")
+        with st.expander(label="Query Result", expanded=False):
+            if attemptCount <= 3:
+                st.dataframe(answer.reset_index(drop=True))
+            else: st.write("Query produced no result")
 
-            with st.spinner(text="Visualizing..."):
-                with st.expander(label="Visualization", expanded=True):
+        with st.spinner(text="Visualizing..."):
+            with st.expander(label="Visualization", expanded=True):
 
-                    attempt_count = 0
-                    max_attempts = 4
-                    while attempt_count < max_attempts:
-                        try:
-                            fig1, fig2 = createCharts(prompt, snowflakeSQL, answer)
-                            st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
-                            st.plotly_chart(fig2, theme="streamlit", use_container_width=True)
-                            break # If operation succeeds, break out of the loop
-                        except Exception as e:
-                            attempt_count += 1
-                            print(f"Chart Attempt {attempt_count} failed with error: {e}")
-                        if attempt_count >= max_attempts:
-                            print("Max charting attempts reached, handling the failure.")
-                            st.write("I was unable to plot the data.")
-                            # Handle the failure after the final attempt
-                        else:
-                            print("Retrying the charts...")
+                attempt_count = 0
+                max_attempts = 4
+                while attempt_count < max_attempts:
+                    try:
+                        fig1, fig2 = createCharts(prompt, snowflakeSQL, answer)
+                        st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
+                        st.plotly_chart(fig2, theme="streamlit", use_container_width=True)
+                        break # If operation succeeds, break out of the loop
+                    except Exception as e:
+                        attempt_count += 1
+                        print(f"Chart Attempt {attempt_count} failed with error: {e}")
+                    if attempt_count >= max_attempts:
+                        print("Max charting attempts reached, handling the failure.")
+                        st.write("I was unable to plot the data.")
+                        # Handle the failure after the final attempt
+                    else:
+                        print("Retrying the charts...")
 
 
-            with st.spinner(text="Analyzing..."):
-                with st.expander(label="Analysis", expanded=True):
-                    analysis = getBusinessAnalysis(prompt + str(snowflakeSQL) + str(answer))
-                    st.markdown(analysis.replace("$","\$"))
+        with st.spinner(text="Analyzing..."):
+            with st.expander(label="Analysis", expanded=True):
+                analysis = getBusinessAnalysis(prompt + str(snowflakeSQL) + str(answer))
+                st.markdown(analysis.replace("$","\$"))
     # with col2:
     #     authenticator.logout('Logout', 'main', key='unique_key')
 
