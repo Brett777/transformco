@@ -202,8 +202,8 @@ def mainPage():
                 with st.expander(label="Analysis", expanded=True):
                     analysis = getBusinessAnalysis(prompt + str(snowflakeSQL) + str(answer))
                     st.markdown(analysis.replace("$","\$"))
-    with col2:
-        authenticator.logout('Logout', 'main', key='unique_key')
+    # with col2:
+    #     authenticator.logout('Logout', 'main', key='unique_key')
 
 
 
@@ -218,20 +218,31 @@ def _main():
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)  # This let's you hide the Streamlit branding
 
-    # Authentication
-    layout = st.container()
-    col1, col2, col3 = layout.columns([1,1,1])
-    with col2:
-        authenticator.login("Login", "main")
+    authenticator.login("Login", "main")
+
 
     if st.session_state["authentication_status"]:
         mainPage()
     elif st.session_state["authentication_status"] is False:
-        with col2:
-            st.error('Username/password is incorrect')
+        st.error('Username/password is incorrect')
     elif st.session_state["authentication_status"] is None:
-        with col2:
-            st.warning('Please enter your username and password')
+        st.warning('Please enter your username and password')
+
+    # Authentication
+    # layout = st.container()
+    # col1, col2, col3 = layout.columns([1,1,1])
+
+    # with col2:
+    #     authenticator.login("Login", "main")
+    #
+    # if st.session_state["authentication_status"]:
+    #     mainPage()
+    # elif st.session_state["authentication_status"] is False:
+    #     with col2:
+    #         st.error('Username/password is incorrect')
+    # elif st.session_state["authentication_status"] is None:
+    #     with col2:
+    #         st.warning('Please enter your username and password')
 
 
 
