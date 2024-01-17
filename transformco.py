@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import os
 import datarobotx as drx
 import streamlit as st
-import streamlit_authenticator as stauth
+import hmac
 from snowflake.sqlalchemy import URL
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
