@@ -8,21 +8,8 @@ import streamlit_authenticator as stauth
 from snowflake.sqlalchemy import URL
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
-import yaml
-from yaml.loader import SafeLoader
 
-with open('config.yaml') as file:
-    config = yaml.load(file, Loader=SafeLoader)
 
-st.set_page_config(page_title="TransformCo", layout="wide")
-
-authenticator = stauth.Authenticate(
-    config['credentials'],
-    config['cookie']['name'],
-    config['cookie']['key'],
-    config['cookie']['expiry_days'],
-    config['preauthorized']
-)
 
 def getSnowflakeSQL(prompt):
     '''
@@ -218,32 +205,37 @@ def _main():
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)  # This let's you hide the Streamlit branding
 
-    authenticator.login("Login", "main")
+    # Authentication code
+    def check_password():
+        def login_form():
+            with st.form("Credentials"):
+                st.text_input("Username", key="username")
+                st.text_input("Password", type="password", key="password")
+                st.form_submit_button("Log in", on_click=password_entered)
 
+        def password_entered():
+            if st.session_state["username"] in st.secrets["passwords"] and hmac.compare_digest(
+                    st.session_state["password"],
+                    st.secrets.passwords[st.session_state["username"]],
+            ):
+                st.session_state["password_correct"] = True
+                del st.session_state["password"]
+                del st.session_state["username"]
+            else:
+                st.session_state["password_correct"] = False
 
-    if st.session_state["authentication_status"]:
-        mainPage()
-    elif st.session_state["authentication_status"] is False:
-        st.error('Username/password is incorrect')
-    elif st.session_state["authentication_status"] is None:
-        st.warning('Please enter your username and password')
+        if st.session_state.get("password_correct", False):
+            return True
 
-    # Authentication
-    # layout = st.container()
-    # col1, col2, col3 = layout.columns([1,1,1])
+        login_form()
+        if "password_correct" in st.session_state:
+            st.error("😕 User not known or password incorrect")
+        return False
 
-    # with col2:
-    #     authenticator.login("Login", "main")
-    #
-    # if st.session_state["authentication_status"]:
-    #     mainPage()
-    # elif st.session_state["authentication_status"] is False:
-    #     with col2:
-    #         st.error('Username/password is incorrect')
-    # elif st.session_state["authentication_status"] is None:
-    #     with col2:
-    #         st.warning('Please enter your username and password')
+    if not check_password():
+        st.stop()
 
+    mainPage()
 
 
 if __name__ == "__main__":
