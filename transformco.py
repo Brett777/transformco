@@ -8,7 +8,7 @@ import hmac
 from snowflake.sqlalchemy import URL
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
-
+st.set_page_config(page_title="TransformCo", layout="wide")
 
 
 def getSnowflakeSQL(prompt):
