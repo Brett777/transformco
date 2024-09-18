@@ -40,19 +40,19 @@ secoda_api_endpoint = st.secrets.secoda.SECODA_API_ENDPOINT
 secoda_api_key = st.secrets.secoda.SECODA_API_KEY
 
 # Load the private key from the file
-@st.cache_resource
-def load_private_key(file_path):
-    with open(file_path, "rb") as key_file:
-        return serialization.load_pem_private_key(
-            key_file.read(),
-            password=None,
-            backend=default_backend()
-        )
+# @st.cache_resource
+# def load_private_key(file_path):
+#     with open(file_path, "rb") as key_file:
+#         return serialization.load_pem_private_key(
+#             key_file.read(),
+#             password=None,
+#             backend=default_backend()
+#         )
 
 
 # Session state variables
 if "private_key" not in st.session_state:
-    st.session_state["private_key"] = load_private_key(private_key_file)
+    st.session_state["private_key"] = st.secrets.snowflake_credentials.private_key_file
 
 if "snowflake_submit_button" not in st.session_state:
     st.session_state["snowflake_submit_button"] = False
