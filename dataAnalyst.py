@@ -805,8 +805,8 @@ def getSnowflakeTables(user, _private_key, account, database, schema, warehouse)
         # tables = [row[0] for row in cursor.fetchall()]
         # tables.sort()
 
-        tables = st.secrets.snowflake_credentials.tables
-
+        tables = st.secrets.snowflake_credentials.tables        
+        st.session_state["tables"] = tables
         return tables
 
     finally:
@@ -862,9 +862,10 @@ def setup_sidebar():
 
         with st.form(key='table_selection_form'):
             # Display friendly names, but submit actual snowflake table name. Friendly names and snowflake table names are configured in secrets.toml
+            options = list(st.session_state["tables"].keys())
             selected_table_labels = st.multiselect(
                 label="Choose a few tables",
-                options=list(st.session_state["tables"].keys()),  # Friendly names
+                options=options,
                 key="table_select_box"
             )
             selected_table_values = [value for key, value in st.session_state["tables"].items() if key in selected_table_labels]
