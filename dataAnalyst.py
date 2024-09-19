@@ -57,7 +57,7 @@ private_key = serialization.load_pem_private_key(
 
 # Session state variables
 if "private_key" not in st.session_state:
-    st.session_state["private_key"] = st.secrets.snowflake_credentials.private_key_file
+    st.session_state["private_key"] = private_key
 
 if "snowflake_submit_button" not in st.session_state:
     st.session_state["snowflake_submit_button"] = False
