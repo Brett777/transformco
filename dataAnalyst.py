@@ -197,6 +197,7 @@ def suggestQuestion(description):
         data=data.to_json(orient='records'),
         headers=headers
     )
+    print(data.to_json(orient='records'))
     print(predictions_response.json())
     suggestion = predictions_response.json()["data"][0]["prediction"]
     return suggestion
