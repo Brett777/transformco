@@ -805,7 +805,7 @@ def getSnowflakeTables(user, _private_key, account, database, schema, warehouse)
         # tables = [row[0] for row in cursor.fetchall()]
         # tables.sort()
 
-        tables = ast.literal_eval(st.secrets.snowflake_credentials.tables)
+        tables = st.secrets.snowflake_credentials.tables
 
         return tables
 
