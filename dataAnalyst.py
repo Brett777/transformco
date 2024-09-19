@@ -860,15 +860,9 @@ def setup_sidebar():
         load_snowflake_tables()
 
         with st.form(key='table_selection_form'):
-            # Display friendly names, but submit actual snowflake table name. Friendly names and snowflake table names are configured in secrets.toml
-            st.write("Type of tables:", type(st.secrets.snowflake_credentials.tables))
-            st.write("Contents of tables:", st.secrets.snowflake_credentials.tables)
+            # Display friendly names, but submit actual snowflake table name. Friendly names and snowflake table names are configured in secrets.toml                        
+            st.session_state["tables"] = st.secrets.snowflake_credentials.tables            
             
-            tables = st.secrets.snowflake_credentials.tables
-            st.session_state["tables"] = tables
-            
-            st.write("Type of st.session_state['tables']:", type(st.session_state["tables"]))
-            st.write("Contents of st.session_state['tables']:", st.session_state["tables"])
             options = list(st.session_state["tables"].keys())
             selected_table_labels = st.multiselect(
                 label="Choose a few tables",
