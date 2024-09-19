@@ -2,7 +2,6 @@ import re
 import concurrent.futures
 import os
 import requests
-import ast
 import json
 
 import pandas as pd
@@ -862,6 +861,14 @@ def setup_sidebar():
 
         with st.form(key='table_selection_form'):
             # Display friendly names, but submit actual snowflake table name. Friendly names and snowflake table names are configured in secrets.toml
+            st.write("Type of tables:", type(st.secrets.snowflake_credentials.tables))
+            st.write("Contents of tables:", st.secrets.snowflake_credentials.tables)
+            
+            tables = st.secrets.snowflake_credentials.tables
+            st.session_state["tables"] = tables
+            
+            st.write("Type of st.session_state['tables']:", type(st.session_state["tables"]))
+            st.write("Contents of st.session_state['tables']:", st.session_state["tables"])
             options = list(st.session_state["tables"].keys())
             selected_table_labels = st.multiselect(
                 label="Choose a few tables",
