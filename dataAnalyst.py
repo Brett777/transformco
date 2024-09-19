@@ -1275,7 +1275,7 @@ def login_page():
             if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
                 st.session_state["logged_in"] = True
                 st.success("Logged in successfully!")
-                st.experimental_rerun()  # Refresh the page after login
+                st.rerun()  # Refresh the page after login
             else:
                 st.error("Incorrect username or password")
 
