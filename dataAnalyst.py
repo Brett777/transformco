@@ -28,7 +28,7 @@ openAImode = True
 # Snowflake connection details
 user = st.secrets.snowflake_credentials.user
 password = st.secrets.snowflake_credentials.password
-private_key_file = st.secrets.snowflake_credentials.private_key_file
+private_key_str = st.secrets.snowflake_credentials.private_key_file
 account = st.secrets.snowflake_credentials.account
 warehouse = st.secrets.snowflake_credentials.warehouse
 database = st.secrets.snowflake_credentials.database
@@ -39,10 +39,15 @@ role = st.secrets.snowflake_credentials.role
 secoda_api_endpoint = st.secrets.secoda.SECODA_API_ENDPOINT
 secoda_api_key = st.secrets.secoda.SECODA_API_KEY
 
+# Load the private key
+private_key = serialization.load_pem_private_key(
+    private_key_str.encode(),
+    password=None,
+)
 
 def initialize_session_state():
     default_values = {
-        'private_key': private_key_file,
+        'private_key': private_key,
         'password': password,
         'businessQuestion': '',
         'askButton': False,
