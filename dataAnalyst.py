@@ -55,33 +55,47 @@ private_key = serialization.load_pem_private_key(
     password=None,
 )
 
+def initialize_session_state():
+    default_values = {
+        'private_key': private_key,
+        'password': password,
+        'businessQuestion': '',
+        'askButton': False,
+        'clearButton': False,
+        'dictionary': '',
+        'dictionary_chunks': '',
+        'this_table_dictionary': '',
+        'llm_generated_dictionary': '',
+        'snowflake_submit_button': False,
+        'table_selection_button': False,
+        'selectedTables': [],
+        'selectedCSVFile': None,
+        'csv_selection_button': False,
+        'cache_cleared': False,
+        'tables': [],
+        'df': pd.DataFrame(),
+        'prompt': '',
+        'sqlCode': '',
+        'results': pd.DataFrame(),
+        'fig1': None,
+        'fig2': None,
+        'analysis': '',
+        'suggestedQuestions': '',
+        'tableDescriptions': [],
+        'tableSamples': [],
+        'smallTableSamples': [],
+        'frequentValues': pd.DataFrame(),
+        'datarobot_logo_svg': '',
+        'customer_logo_svg': '',
+        'html_content': '',
+        'download_link': '',
+        'csvUploadButton': None,
+    }
+    for key, value in default_values.items():
+        st.session_state.setdefault(key, value)
 
-# Session state variables
-if "private_key" not in st.session_state:
-    st.session_state["private_key"] = private_key
+initialize_session_state()
 
-if "snowflake_submit_button" not in st.session_state:
-    st.session_state["snowflake_submit_button"] = False
-    st.session_state["table_selection_button"] = False
-    st.session_state["selectedTables"] = []
-    st.session_state["selectedCSVFile"] = None
-
-if 'businessQuestion' not in st.session_state:
-    st.session_state["businessQuestion"] = ""
-
-if "askButton" not in st.session_state:
-    st.session_state["askButton"] = False
-if "clearButton" not in st.session_state:
-    st.session_state["clearButton"] = False
-
-if "dictionary_chunks" not in st.session_state:
-    st.session_state['dictionary_chunks'] = ""
-
-if "this_table_dictionary" not in st.session_state:
-    st.session_state['this_table_dictionary'] = ""
-
-if "llm_generated_Dictionary" not in st.session_state:
-    st.session_state["llm_generated_Dictionary"] = ""
 
 
 
