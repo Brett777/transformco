@@ -1003,7 +1003,8 @@ def setup_sidebar():
             # Display friendly names, but submit actual snowflake table name. Friendly names and snowflake table names are configured in secrets.toml
             selected_table_labels = st.multiselect(
                 label="Choose a few tables",
-                options=list(st.session_state["tables"].keys()),  # Friendly names
+                # options=list(st.session_state["tables"].keys()),  # Friendly names
+                options=st.session_state["tables"],
                 key="table_select_box"
             )
             selected_table_values = [value for key, value in st.session_state["tables"].items() if key in selected_table_labels]
