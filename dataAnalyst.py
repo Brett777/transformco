@@ -28,7 +28,7 @@ openAImode = True
 # Snowflake connection details
 user = st.secrets.snowflake_credentials.user
 password = st.secrets.snowflake_credentials.password
-private_key_str = st.secrets.snowflake_credentials.private_key_file
+private_key_file = st.secrets.snowflake_credentials.private_key_file
 account = st.secrets.snowflake_credentials.account
 warehouse = st.secrets.snowflake_credentials.warehouse
 database = st.secrets.snowflake_credentials.database
@@ -39,25 +39,16 @@ role = st.secrets.snowflake_credentials.role
 secoda_api_endpoint = st.secrets.secoda.SECODA_API_ENDPOINT
 secoda_api_key = st.secrets.secoda.SECODA_API_KEY
 
-# Load the private key from the file
-# @st.cache_resource
-# def load_private_key(file_path):
-#     with open(file_path, "rb") as key_file:
-#         return serialization.load_pem_private_key(
-#             key_file.read(),
-#             password=None,
-#             backend=default_backend()
-#         )
-
 # Load the private key
 private_key = serialization.load_pem_private_key(
     private_key_str.encode(),
     password=None,
 )
 
+
 def initialize_session_state():
     default_values = {
-        'private_key': private_key,
+        'private_key': load_private_key(private_key_file),
         'password': password,
         'businessQuestion': '',
         'askButton': False,
@@ -95,8 +86,6 @@ def initialize_session_state():
         st.session_state.setdefault(key, value)
 
 initialize_session_state()
-
-
 
 
 @st.cache_data(show_spinner=False)
@@ -1000,33 +989,41 @@ def clear_cache_callback():
     # Update session state to show success message
     st.session_state["cache_cleared"] = True
 
-
 def setup_sidebar():
     with st.sidebar:
         st.image("Snowflake.svg", width=75)
         load_snowflake_tables()
 
         with st.form(key='table_selection_form'):
-            # Display friendly names, but submit actual snowflake table name. Friendly names and snowflake table names are configured in secrets.toml                        
-            st.session_state["tables"] = st.secrets.snowflake_credentials.tables            
-            
-            options = list(st.session_state["tables"].keys())
-            selected_table_labels = st.multiselect(
-                label="Choose a few tables",
-                options=options,
-                key="table_select_box"
-            )
-            selected_table_values = [value for key, value in st.session_state["tables"].items() if key in selected_table_labels]
+        # Display friendly names, but submit actual snowflake table name. Friendly names and snowflake table names are configured in secrets.toml                        
+        st.session_state["tables"] = st.secrets.snowflake_credentials.tables            
 
-            print(selected_table_values)
-            st.session_state['selectedTables'] = selected_table_values
-            st.session_state["snowflake_submit_button"] = st.form_submit_button(label='Analyze', type="secondary")
+        options = list(st.session_state["tables"].keys())
+        selected_table_labels = st.multiselect(
+            label="Choose a few tables",
+            options=options,
+            key="table_select_box"
+        )
+        selected_table_values = [value for key, value in st.session_state["tables"].items() if key in selected_table_labels]
+
+        print(selected_table_values)
+        st.session_state['selectedTables'] = selected_table_values
+        st.session_state["snowflake_submit_button"] = st.form_submit_button(label='Analyze', type="secondary")
+
         process_table_selection()
 
         st.image("csv_File_Logo.svg", width=45)
         st.session_state["csvUploadButton"] = st.file_uploader(label="Or, upload a CSV file",
                                                                accept_multiple_files=False)
         process_csv_upload()
+        with st.expander("Clear Cache", expanded=False):
+            st.write("To reset any saved data and completely start over, clear the cache. You will have to reload your dataset.")
+            st.button("Clear Cache", on_click=clear_cache_callback)
+            if st.session_state["cache_cleared"]:
+                st.success("Cache cleared successfully!")
+                # Reset the flag
+                st.session_state["cache_cleared"] = False
+
 
 def load_snowflake_tables():
     try:
