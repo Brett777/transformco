@@ -48,7 +48,7 @@ private_key = serialization.load_pem_private_key(
 
 def initialize_session_state():
     default_values = {
-        'private_key': load_private_key(private_key_file),
+        'private_key': private_key,
         'password': password,
         'businessQuestion': '',
         'askButton': False,
