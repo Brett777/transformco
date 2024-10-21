@@ -2,6 +2,7 @@ import re
 import concurrent.futures
 import os
 import requests
+import ast
 import json
 
 import pandas as pd
