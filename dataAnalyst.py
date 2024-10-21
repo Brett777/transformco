@@ -1013,7 +1013,6 @@ def setup_sidebar():
                                                                accept_multiple_files=False)
         process_csv_upload()
 
-
 def load_snowflake_tables():
     try:
         st.session_state["tables"] = getSnowflakeTables(user, st.session_state["private_key"], account, database, schema, warehouse)
@@ -1156,22 +1155,23 @@ def display_data_dictionary(index):
 
     if dictionary_key not in st.session_state:
         with st.expander(label=f"Data Dictionary for {table_name}", expanded=False):
-            # Commented out. Replacing with Secoda
-            # with st.spinner("Making dictionary..."):
-            #     dictionary_chunks = make_dictionary_chunks(st.session_state["tableSamples"][index])
-            # with st.spinner("Putting it all together..."):
-            #     assembled_dictionary = assembleDictionaryParts(dictionary_chunks)
-            #     st.session_state[dictionary_key] = assembled_dictionary
-            #
-            #     # Initialize or append to llm_generated_dictionary
-            #     if 'llm_generated_dictionary' not in st.session_state:
-            #         st.session_state['llm_generated_dictionary'] = assembled_dictionary
-            #     else:
-            #         st.session_state['llm_generated_dictionary'] += "\n" + assembled_dictionary
-            with st.spinner("Getting dictionary from Secoda..."):
-                secoda_dictionary = get_column_definitions_from_secoda("e7317c24-f56b-40b2-abb7-50d7974ee4f0", api_key=secoda_api_key)
-                st.session_state['llm_generated_dictionary'] = secoda_dictionary
-            st.markdown(secoda_dictionary)
+            if st.session_state["selectedCSVFile"]:
+                with st.spinner("Making dictionary..."):
+                    dictionary_chunks = make_dictionary_chunks(st.session_state["tableSamples"][index])
+                with st.spinner("Putting it all together..."):
+                    assembled_dictionary = assembleDictionaryParts(dictionary_chunks)
+                    st.session_state[dictionary_key] = assembled_dictionary
+
+                    # Initialize or append to llm_generated_dictionary
+                    if 'llm_generated_dictionary' not in st.session_state:
+                        st.session_state['llm_generated_dictionary'] = assembled_dictionary
+                    else:
+                        st.session_state['llm_generated_dictionary'] += "\n" + assembled_dictionary
+            else:
+                with st.spinner("Getting dictionary from Secoda..."):
+                    secoda_dictionary = get_column_definitions_from_secoda("e7317c24-f56b-40b2-abb7-50d7974ee4f0", api_key=secoda_api_key)
+                    st.session_state['llm_generated_dictionary'] = secoda_dictionary
+                st.markdown(secoda_dictionary)
     else:
         with st.expander(label=f"Data Dictionary for {table_name}", expanded=False):
             st.markdown(st.session_state[dictionary_key])
@@ -1208,6 +1208,8 @@ def display_csv_explore_tab(tab):
 
 def display_csv_analysis_tab(tab):
     with tab:
+        print("Session state DICTIONARY")
+        print(st.session_state["dictionary"])
         st.session_state["suggestedQuestions"] = suggestQuestion(st.session_state["dictionary"])
         st.write(st.session_state["suggestedQuestions"])
 
@@ -1228,7 +1230,6 @@ def display_action_buttons():
 
     buttonCol1.button(label="Ask", use_container_width=True, type="primary", on_click=text_input_enterKey)
     buttonCol2.button(label="clear", use_container_width=True, type="secondary", on_click=clear_text)
-
 
 def analyze_question():
     with st.spinner("Analyzing... "):
@@ -1296,6 +1297,24 @@ def generate_csv_prompt():
             "\n Data Dictionary: \n" + str(st.session_state["dictionary"]))
 
 
+# def execute_query_with_retries():
+#     attempts = 0
+#     max_retries = 5
+#     while attempts < max_retries:
+#         st.session_state["sqlCode"] = None
+#         try:
+#             st.session_state["sqlCode"], st.session_state["results"] = execute_sql_to_python_analysis(st.session_state["prompt"], user, st.session_state["private_key"], account, warehouse, database, schema)
+#             # st.session_state["sqlCode"], st.session_state["results"] = executeSnowflakeSnowpark(st.session_state["prompt"], user, st.session_state["private_key"], account, warehouse, database, schema, role)
+#             if st.session_state["results"].empty:
+#                 raise ValueError("The DataFrame is empty, retrying...")
+#             break
+#         except Exception as e:
+#             attempts += 1
+#             st.session_state[
+#                 "prompt"] += f"\nQUERY FAILED! Attempt {attempts} failed with error: {repr(e)}\nSQL Code: {st.session_state['sqlCode']}"
+#             if attempts == max_retries:
+#                 break
+
 def execute_query_with_retries(csv_mode):
     attempts = 0
     max_retries = 5
@@ -1316,7 +1335,6 @@ def execute_query_with_retries(csv_mode):
                 "prompt"] += f"\nQUERY FAILED! Attempt {attempts} failed with error: {repr(e)}\nCode: {st.session_state['sqlCode']}"
             if attempts == max_retries:
                 break
-
 
 def display_query_results():
     with st.expander(label="Code", expanded=False):
@@ -1379,11 +1397,9 @@ def mainPage():
     display_logo_header()
 
     if st.session_state["table_selection_button"] or st.session_state["selectedCSVFile"]:
-        st.session_state["dictionary"], st.session_state["suggestedQuestions"] = get_data_definitions_and_suggestions()
-
         tab1, tab2 = st.tabs(["Analyze", "Explore"])
-
         if st.session_state.get("table_selection_button", False):
+            st.session_state["dictionary"], st.session_state["suggestedQuestions"] = get_data_definitions_and_suggestions()
             with st.spinner(text="Analyzing table structure, see Explore tab for details..."):
                 display_explore_tab(tab2)
             display_analysis_tab(tab1)
@@ -1412,7 +1428,8 @@ def login_page():
             if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
                 st.session_state["logged_in"] = True
                 st.success("Logged in successfully!")
-                st.rerun()  # Refresh the page after login
+                st.rerun()# Refresh the page after login
+
             else:
                 st.error("Incorrect username or password")
 
@@ -1426,7 +1443,7 @@ def _main():
     </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
+    # mainPage()
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
 
