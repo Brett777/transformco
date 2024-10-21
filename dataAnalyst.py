@@ -2,6 +2,7 @@ import re
 import concurrent.futures
 import os
 import requests
+import ast
 import json
 
 import pandas as pd
@@ -27,7 +28,7 @@ openAImode = True
 # Snowflake connection details
 user = st.secrets.snowflake_credentials.user
 password = st.secrets.snowflake_credentials.password
-private_key_str = st.secrets.snowflake_credentials.private_key_file
+private_key_file = st.secrets.snowflake_credentials.private_key_file
 account = st.secrets.snowflake_credentials.account
 warehouse = st.secrets.snowflake_credentials.warehouse
 database = st.secrets.snowflake_credentials.database
@@ -39,49 +40,60 @@ secoda_api_endpoint = st.secrets.secoda.SECODA_API_ENDPOINT
 secoda_api_key = st.secrets.secoda.SECODA_API_KEY
 
 # Load the private key from the file
-# @st.cache_resource
-# def load_private_key(file_path):
-#     with open(file_path, "rb") as key_file:
-#         return serialization.load_pem_private_key(
-#             key_file.read(),
-#             password=None,
-#             backend=default_backend()
-#         )
-
-# Load the private key
-private_key = serialization.load_pem_private_key(
-    private_key_str.encode(),
-    password=None,
-)
+@st.cache_resource
+def load_private_key(file_path):
+    with open(file_path, "rb") as key_file:
+        return serialization.load_pem_private_key(
+            key_file.read(),
+            password=None,
+            backend=default_backend()
+        )
 
 
 # Session state variables
-if "private_key" not in st.session_state:
-    st.session_state["private_key"] = private_key
+# if "private_key" not in st.session_state:
+#     st.session_state["private_key"] = load_private_key(private_key_file)
 
-if "snowflake_submit_button" not in st.session_state:
-    st.session_state["snowflake_submit_button"] = False
-    st.session_state["table_selection_button"] = False
-    st.session_state["selectedTables"] = []
-    st.session_state["selectedCSVFile"] = None
+def initialize_session_state():
+    default_values = {
+        'private_key': load_private_key(private_key_file),
+        'password': password,
+        'businessQuestion': '',
+        'askButton': False,
+        'clearButton': False,
+        'dictionary': '',
+        'dictionary_chunks': '',
+        'this_table_dictionary': '',
+        'llm_generated_dictionary': '',
+        'snowflake_submit_button': False,
+        'table_selection_button': False,
+        'selectedTables': [],
+        'selectedCSVFile': None,
+        'csv_selection_button': False,
+        'cache_cleared': False,
+        'tables': [],
+        'df': pd.DataFrame(),
+        'prompt': '',
+        'sqlCode': '',
+        'results': pd.DataFrame(),
+        'fig1': None,
+        'fig2': None,
+        'analysis': '',
+        'suggestedQuestions': '',
+        'tableDescriptions': [],
+        'tableSamples': [],
+        'smallTableSamples': [],
+        'frequentValues': pd.DataFrame(),
+        'datarobot_logo_svg': '',
+        'customer_logo_svg': '',
+        'html_content': '',
+        'download_link': '',
+        'csvUploadButton': None,
+    }
+    for key, value in default_values.items():
+        st.session_state.setdefault(key, value)
 
-if 'businessQuestion' not in st.session_state:
-    st.session_state["businessQuestion"] = ""
-
-if "askButton" not in st.session_state:
-    st.session_state["askButton"] = False
-if "clearButton" not in st.session_state:
-    st.session_state["clearButton"] = False
-
-if "dictionary_chunks" not in st.session_state:
-    st.session_state['dictionary_chunks'] = ""
-
-if "this_table_dictionary" not in st.session_state:
-    st.session_state['this_table_dictionary'] = ""
-
-if "llm_generated_Dictionary" not in st.session_state:
-    st.session_state["llm_generated_Dictionary"] = ""
-
+initialize_session_state()
 
 
 @st.cache_data(show_spinner=False)
@@ -203,8 +215,6 @@ def suggestQuestion(description):
         data=data.to_json(orient='records'),
         headers=headers
     )
-    print(data.to_json(orient='records'))
-    print(predictions_response.json())
     suggestion = predictions_response.json()["data"][0]["prediction"]
     return suggestion
 
@@ -409,6 +419,7 @@ def getSnowflakePython(prompt, warehouse=warehouse, database=database, schema=sc
     # Join all matches into a single string, separated by two newlines
     snowpark_code = '\n\n'.join(matches)
     return snowpark_code
+
 @st.cache_data(show_spinner=False)
 def executeSnowflakeSnowpark(prompt, user, _private_key, account, warehouse, database, schema, role):
     from snowflake.snowpark import Session
@@ -454,6 +465,123 @@ def executeSnowflakeSnowpark(prompt, user, _private_key, account, warehouse, dat
         session.close()
 
     return snowflake_df_transform, results
+
+@st.cache_data(show_spinner=False)
+def get_python_code_from_sql(prompt):
+    systemPrompt = st.secrets.prompts.python_analysis_on_snowflake
+    # prompt = "test"
+    data = pd.DataFrame({"systemPrompt": systemPrompt, "promptText": [prompt]})
+    deployment_id = st.secrets.datarobot_deployment_id.python_code_generator
+    API_URL = f'{st.secrets.datarobot_credentials.PREDICTION_SERVER}/predApi/v1.0/deployments/{deployment_id}/predictions'
+    API_KEY = st.secrets.datarobot_credentials.API_KEY
+    DATAROBOT_KEY = st.secrets.datarobot_credentials.DATAROBOT_KEY
+    headers = {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer {}'.format(API_KEY),
+        'DataRobot-Key': DATAROBOT_KEY,
+    }
+    url = API_URL.format(deployment_id=deployment_id)
+    predictions_response = requests.post(
+        url,
+        data=data.to_json(orient='records'),
+        headers=headers
+    )
+    code = predictions_response.json()["data"][0]["prediction"]
+    return code
+
+@st.cache_data(show_spinner=False)
+def execute_python_code_from_sql(prompt, df):
+    '''
+    Executes the Python Code generated by the LLM
+    '''
+    print("Generating code...")
+    pythonCode = get_python_code_from_sql(prompt)
+    print(pythonCode.replace("```python", "").replace("```", ""))
+    pythonCode = pythonCode.replace("```python", "").replace("```", "")
+    print("Executing...")
+    function_dict = {}
+    exec(pythonCode, function_dict)  # execute the code created by our LLM
+    analyze_data = function_dict['analyze_data']  # get the function that our code created
+    results = analyze_data(df)
+    return pythonCode, results
+
+@st.cache_data(show_spinner=False)
+def get_and_reduce_snowflake_sql(prompt, warehouse=warehouse, database=database, schema=schema):
+    systemPrompt = st.secrets.prompts.sql_reduction
+    systemPrompt = systemPrompt.format(warehouse=warehouse, database=database, schema=schema)
+    data = pd.DataFrame({"systemPrompt": systemPrompt, "promptText": [
+        str(prompt) + "\nSNOWFLAKE ENVIRONMENT:\nwarehouse = " + str(warehouse) + "\ndatabase = " + str(
+            database) + "\nschema = " + str(schema)]})
+    deployment_id = st.secrets.datarobot_deployment_id.sql_code_generator
+    API_URL = f'{st.secrets.datarobot_credentials.PREDICTION_SERVER}/predApi/v1.0/deployments/{deployment_id}/predictions'
+    API_KEY = st.secrets.datarobot_credentials.API_KEY
+    DATAROBOT_KEY = st.secrets.datarobot_credentials.DATAROBOT_KEY
+    headers = {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer {}'.format(API_KEY),
+        'DataRobot-Key': DATAROBOT_KEY,
+    }
+    url = API_URL.format(deployment_id=deployment_id)
+    predictions_response = requests.post(
+        url,
+        data=data.to_json(orient='records'),
+        headers=headers
+    )
+    code = predictions_response.json()["data"][0]["prediction"]
+    # Pattern to match code blocks that optionally start with ```python or just ```
+    pattern = r'```(?:sql)?\n(.*?)```'
+    matches = re.findall(pattern, code, re.DOTALL)
+
+    # Join all matches into a single string, separated by two newlines
+    sql_code = '\n\n'.join(matches)
+    return sql_code
+
+@st.cache_data(show_spinner=False)
+def execute_sql_to_python_analysis(prompt, user, _private_key, account, warehouse, database, schema):
+    # Get the SQL code
+    snowflakeSQL = get_and_reduce_snowflake_sql(prompt)
+
+    # Create a connection using Snowflake Connector
+    conn = snowflake.connector.connect(
+        user=user,
+        private_key=_private_key,
+        account=account,
+        warehouse=warehouse,
+        database=database,
+        schema=schema,
+        role=role,
+        # Enable case sensitivity for identifiers
+        case_sensitive_identifier_quoting=True
+    )
+    results = None
+
+    try:
+        # Execute the query and fetch the results into a DataFrame
+        with conn.cursor() as cur:
+            cur.execute(snowflakeSQL)
+            results = cur.fetch_pandas_all()
+            results.columns = results.columns.str.upper()
+    except snowflake.connector.errors.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        conn.close()
+
+        # Build the prompt for the python step
+        prompt2 = (
+            f"Context: {st.session_state['prompt']}\n" 
+            f"Initial Query to Reduce Scope: {snowflakeSQL}\n"
+            f"Data Sample From Query: \n{str(results.head(10))}\n"
+        )
+
+    pythonCode, python_analysis = execute_python_code_from_sql(prompt2, results)
+
+    print("SQL RESULTS \n ==============")
+    print(results)
+    print("PYTHON CODE \n ==============")
+    print(pythonCode)
+    print("PYTHON RESULTS \n ==============")
+    print(python_analysis)
+    return pythonCode, python_analysis
 
 @st.cache_data(show_spinner=False)
 def getDataSample(sampleSize):
@@ -812,8 +940,8 @@ def getSnowflakeTables(user, _private_key, account, database, schema, warehouse)
         # tables = [row[0] for row in cursor.fetchall()]
         # tables.sort()
 
-        tables = st.secrets.snowflake_credentials.tables        
-        st.session_state["tables"] = tables
+        tables = ast.literal_eval(st.secrets.snowflake_credentials.tables)
+
         return tables
 
     finally:
@@ -861,6 +989,13 @@ def render_header():
     st.image("transformCoLogo.svg", width=500)
     st.title("Ask a question about the data.")
 
+def clear_cache_callback():
+    # Clear both data and resource caches
+    st.cache_data.clear()
+    st.cache_resource.clear()
+
+    # Update session state to show success message
+    st.session_state["cache_cleared"] = True
 
 def setup_sidebar():
     with st.sidebar:
@@ -868,13 +1003,10 @@ def setup_sidebar():
         load_snowflake_tables()
 
         with st.form(key='table_selection_form'):
-            # Display friendly names, but submit actual snowflake table name. Friendly names and snowflake table names are configured in secrets.toml                        
-            st.session_state["tables"] = st.secrets.snowflake_credentials.tables            
-            
-            options = list(st.session_state["tables"].keys())
+            # Display friendly names, but submit actual snowflake table name. Friendly names and snowflake table names are configured in secrets.toml
             selected_table_labels = st.multiselect(
                 label="Choose a few tables",
-                options=options,
+                options=list(st.session_state["tables"].keys()),  # Friendly names
                 key="table_select_box"
             )
             selected_table_values = [value for key, value in st.session_state["tables"].items() if key in selected_table_labels]
@@ -888,6 +1020,13 @@ def setup_sidebar():
         st.session_state["csvUploadButton"] = st.file_uploader(label="Or, upload a CSV file",
                                                                accept_multiple_files=False)
         process_csv_upload()
+        with st.expander("Clear Cache", expanded=False):
+            st.write("To reset any saved data and completely start over, clear the cache. You will have to reload your dataset.")
+            st.button("Clear Cache", on_click=clear_cache_callback)
+            if st.session_state["cache_cleared"]:
+                st.success("Cache cleared successfully!")
+                # Reset the flag
+                st.session_state["cache_cleared"] = False
 
 
 def load_snowflake_tables():
@@ -1032,22 +1171,23 @@ def display_data_dictionary(index):
 
     if dictionary_key not in st.session_state:
         with st.expander(label=f"Data Dictionary for {table_name}", expanded=False):
-            # Commented out. Replacing with Secoda
-            # with st.spinner("Making dictionary..."):
-            #     dictionary_chunks = make_dictionary_chunks(st.session_state["tableSamples"][index])
-            # with st.spinner("Putting it all together..."):
-            #     assembled_dictionary = assembleDictionaryParts(dictionary_chunks)
-            #     st.session_state[dictionary_key] = assembled_dictionary
-            #
-            #     # Initialize or append to llm_generated_dictionary
-            #     if 'llm_generated_dictionary' not in st.session_state:
-            #         st.session_state['llm_generated_dictionary'] = assembled_dictionary
-            #     else:
-            #         st.session_state['llm_generated_dictionary'] += "\n" + assembled_dictionary
-            with st.spinner("Getting dictionary from Secoda..."):
-                secoda_dictionary = get_column_definitions_from_secoda("e7317c24-f56b-40b2-abb7-50d7974ee4f0", api_key=secoda_api_key)
-                st.session_state['llm_generated_dictionary'] = secoda_dictionary
-            st.markdown(secoda_dictionary)
+            if st.session_state["selectedCSVFile"]:
+                with st.spinner("Making dictionary..."):
+                    dictionary_chunks = make_dictionary_chunks(st.session_state["tableSamples"][index])
+                with st.spinner("Putting it all together..."):
+                    assembled_dictionary = assembleDictionaryParts(dictionary_chunks)
+                    st.session_state[dictionary_key] = assembled_dictionary
+
+                    # Initialize or append to llm_generated_dictionary
+                    if 'llm_generated_dictionary' not in st.session_state:
+                        st.session_state['llm_generated_dictionary'] = assembled_dictionary
+                    else:
+                        st.session_state['llm_generated_dictionary'] += "\n" + assembled_dictionary
+            else:
+                with st.spinner("Getting dictionary from Secoda..."):
+                    secoda_dictionary = get_column_definitions_from_secoda("e7317c24-f56b-40b2-abb7-50d7974ee4f0", api_key=secoda_api_key)
+                    st.session_state['llm_generated_dictionary'] = secoda_dictionary
+                st.markdown(secoda_dictionary)
     else:
         with st.expander(label=f"Data Dictionary for {table_name}", expanded=False):
             st.markdown(st.session_state[dictionary_key])
@@ -1084,6 +1224,8 @@ def display_csv_explore_tab(tab):
 
 def display_csv_analysis_tab(tab):
     with tab:
+        print("Session state DICTIONARY")
+        print(st.session_state["dictionary"])
         st.session_state["suggestedQuestions"] = suggestQuestion(st.session_state["dictionary"])
         st.write(st.session_state["suggestedQuestions"])
 
@@ -1105,12 +1247,11 @@ def display_action_buttons():
     buttonCol1.button(label="Ask", use_container_width=True, type="primary", on_click=text_input_enterKey)
     buttonCol2.button(label="clear", use_container_width=True, type="secondary", on_click=clear_text)
 
-
 def analyze_question():
     with st.spinner("Analyzing... "):
         full_dictionary = []
         st.session_state["prompt"] = generate_prompt()
-        execute_query_with_retries()
+        execute_query_with_retries(csv_mode=False)
 
         try:
             display_query_results()
@@ -1128,7 +1269,7 @@ def analyze_question():
 def analyze_question_csv():
     with st.spinner("Analyzing... "):
         st.session_state["prompt"] = generate_csv_prompt()
-        execute_query_with_retries()
+        execute_query_with_retries(csv_mode=True)
 
         try:
             display_query_results()
@@ -1172,24 +1313,44 @@ def generate_csv_prompt():
             "\n Data Dictionary: \n" + str(st.session_state["dictionary"]))
 
 
-def execute_query_with_retries():
+# def execute_query_with_retries():
+#     attempts = 0
+#     max_retries = 5
+#     while attempts < max_retries:
+#         st.session_state["sqlCode"] = None
+#         try:
+#             st.session_state["sqlCode"], st.session_state["results"] = execute_sql_to_python_analysis(st.session_state["prompt"], user, st.session_state["private_key"], account, warehouse, database, schema)
+#             # st.session_state["sqlCode"], st.session_state["results"] = executeSnowflakeSnowpark(st.session_state["prompt"], user, st.session_state["private_key"], account, warehouse, database, schema, role)
+#             if st.session_state["results"].empty:
+#                 raise ValueError("The DataFrame is empty, retrying...")
+#             break
+#         except Exception as e:
+#             attempts += 1
+#             st.session_state[
+#                 "prompt"] += f"\nQUERY FAILED! Attempt {attempts} failed with error: {repr(e)}\nSQL Code: {st.session_state['sqlCode']}"
+#             if attempts == max_retries:
+#                 break
+
+def execute_query_with_retries(csv_mode):
     attempts = 0
     max_retries = 5
     while attempts < max_retries:
         st.session_state["sqlCode"] = None
         try:
-            st.session_state["sqlCode"], st.session_state["results"] = executeSnowflakeQuery(st.session_state["prompt"], user, st.session_state["private_key"], account, warehouse, database, schema)
-            # st.session_state["sqlCode"], st.session_state["results"] = executeSnowflakeSnowpark(st.session_state["prompt"], user, st.session_state["private_key"], account, warehouse, database, schema, role)
+            if csv_mode:
+                st.session_state["sqlCode"], st.session_state["results"] = executePythonCode(st.session_state["prompt"], st.session_state["df"])
+            else:
+                st.session_state["sqlCode"], st.session_state["results"] = execute_sql_to_python_analysis(st.session_state["prompt"], user, st.session_state["private_key"], account, warehouse, database, schema)
+                # st.session_state["sqlCode"], st.session_state["results"] = executeSnowflakeSnowpark(st.session_state["prompt"], user, st.session_state["password"], account, warehouse, database, schema)
             if st.session_state["results"].empty:
                 raise ValueError("The DataFrame is empty, retrying...")
             break
         except Exception as e:
             attempts += 1
             st.session_state[
-                "prompt"] += f"\nQUERY FAILED! Attempt {attempts} failed with error: {repr(e)}\nSQL Code: {st.session_state['sqlCode']}"
+                "prompt"] += f"\nQUERY FAILED! Attempt {attempts} failed with error: {repr(e)}\nCode: {st.session_state['sqlCode']}"
             if attempts == max_retries:
                 break
-
 
 def display_query_results():
     with st.expander(label="Code", expanded=False):
@@ -1252,11 +1413,9 @@ def mainPage():
     display_logo_header()
 
     if st.session_state["table_selection_button"] or st.session_state["selectedCSVFile"]:
-        st.session_state["dictionary"], st.session_state["suggestedQuestions"] = get_data_definitions_and_suggestions()
-
         tab1, tab2 = st.tabs(["Analyze", "Explore"])
-
         if st.session_state.get("table_selection_button", False):
+            st.session_state["dictionary"], st.session_state["suggestedQuestions"] = get_data_definitions_and_suggestions()
             with st.spinner(text="Analyzing table structure, see Explore tab for details..."):
                 display_explore_tab(tab2)
             display_analysis_tab(tab1)
@@ -1285,7 +1444,8 @@ def login_page():
             if username in USER_CREDENTIALS and USER_CREDENTIALS[username] == password:
                 st.session_state["logged_in"] = True
                 st.success("Logged in successfully!")
-                st.rerun()  # Refresh the page after login
+                st.rerun()# Refresh the page after login
+
             else:
                 st.error("Incorrect username or password")
 
@@ -1299,7 +1459,7 @@ def _main():
     </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
+    mainPage()
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
 
