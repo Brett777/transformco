@@ -1007,7 +1007,7 @@ def setup_sidebar():
                 options=st.session_state["tables"],
                 key="table_select_box"
             )
-            selected_table_values = [value for key, value in st.session_state["tables"].items() if key in selected_table_labels]
+            selected_table_values = [value for key, value in st.session_state["tables"] if key in selected_table_labels]
 
             print(selected_table_values)
             st.session_state['selectedTables'] = selected_table_values
