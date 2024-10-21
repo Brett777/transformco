@@ -53,7 +53,7 @@ def load_private_key(file_path):
 def initialize_session_state():
     default_values = {
         # 'private_key': load_private_key(private_key_file),
-        'private_key': st.secrets.private_key_file,
+        'private_key': private_key_file,
         'password': password,
         'businessQuestion': '',
         'askButton': False,
