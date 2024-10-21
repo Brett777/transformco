@@ -50,13 +50,10 @@ def load_private_key(file_path):
         )
 
 
-# Session state variables
-# if "private_key" not in st.session_state:
-#     st.session_state["private_key"] = load_private_key(private_key_file)
-
 def initialize_session_state():
     default_values = {
-        'private_key': load_private_key(private_key_file),
+        # 'private_key': load_private_key(private_key_file),
+        'private_key': st.secrets.private_key_file,
         'password': password,
         'businessQuestion': '',
         'askButton': False,
