@@ -1468,7 +1468,7 @@ def _main():
     </style>
     """
     st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-    mainPage()
+    # mainPage()
     if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = False
 
