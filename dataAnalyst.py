@@ -39,20 +39,30 @@ role = st.secrets.snowflake_credentials.role
 secoda_api_endpoint = st.secrets.secoda.SECODA_API_ENDPOINT
 secoda_api_key = st.secrets.secoda.SECODA_API_KEY
 
-# Load the private key from the file
+# # Load the private key from the file
+# @st.cache_resource
+# def load_private_key(file_path):
+#     with open(file_path, "rb") as key_file:
+#         return serialization.load_pem_private_key(
+#             key_file.read(),
+#             password=None,
+#             backend=default_backend()
+#         )
+# Load the private key from the secrets
 @st.cache_resource
-def load_private_key(file_path):
-    with open(file_path, "rb") as key_file:
-        return serialization.load_pem_private_key(
-            key_file.read(),
-            password=None,
-            backend=default_backend()
-        )
+def load_private_key(key_string):
+    key_bytes = key_string.encode('utf-8')
+    return serialization.load_pem_private_key(
+        key_bytes,
+        password=None,
+        backend=default_backend()
+    )
+
 
 
 def initialize_session_state():
     default_values = {
-        'private_key': load_private_key(private_key_file),        
+        'private_key': load_private_key(private_key_file),
         'password': password,
         'businessQuestion': '',
         'askButton': False,
