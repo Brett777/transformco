@@ -1113,7 +1113,7 @@ def analyze_question():
     with st.spinner("Analyzing... "):
         full_dictionary = []
         st.session_state["prompt"] = generate_prompt()
-        execute_query_with_retries()
+        execute_query_with_retries(csv_mode=False)
 
         try:
             display_query_results()
@@ -1131,7 +1131,7 @@ def analyze_question():
 def analyze_question_csv():
     with st.spinner("Analyzing... "):
         st.session_state["prompt"] = generate_csv_prompt()
-        execute_query_with_retries()
+        execute_query_with_retries(csv_mode=True)
 
         try:
             display_query_results()
@@ -1145,6 +1145,7 @@ def analyze_question_csv():
             st.write("The query returns an empty result. Try rephrasing the question.")
             print("No data returned.")
             st.stop()
+
 
 
 def generate_prompt():
@@ -1175,24 +1176,26 @@ def generate_csv_prompt():
             "\n Data Dictionary: \n" + str(st.session_state["dictionary"]))
 
 
-def execute_query_with_retries():
+def execute_query_with_retries(csv_mode):
     attempts = 0
     max_retries = 5
     while attempts < max_retries:
         st.session_state["sqlCode"] = None
         try:
-            st.session_state["sqlCode"], st.session_state["results"] = executeSnowflakeQuery(st.session_state["prompt"], user, st.session_state["private_key"], account, warehouse, database, schema)
-            # st.session_state["sqlCode"], st.session_state["results"] = executeSnowflakeSnowpark(st.session_state["prompt"], user, st.session_state["private_key"], account, warehouse, database, schema, role)
+            if csv_mode:
+                st.session_state["sqlCode"], st.session_state["results"] = executePythonCode(st.session_state["prompt"], st.session_state["df"])
+            else:
+                st.session_state["sqlCode"], st.session_state["results"] = execute_sql_to_python_analysis(st.session_state["prompt"], user, st.session_state["private_key"], account, warehouse, database, schema)
+                # st.session_state["sqlCode"], st.session_state["results"] = executeSnowflakeSnowpark(st.session_state["prompt"], user, st.session_state["password"], account, warehouse, database, schema)
             if st.session_state["results"].empty:
                 raise ValueError("The DataFrame is empty, retrying...")
             break
         except Exception as e:
             attempts += 1
             st.session_state[
-                "prompt"] += f"\nQUERY FAILED! Attempt {attempts} failed with error: {repr(e)}\nSQL Code: {st.session_state['sqlCode']}"
+                "prompt"] += f"\nQUERY FAILED! Attempt {attempts} failed with error: {repr(e)}\nCode: {st.session_state['sqlCode']}"
             if attempts == max_retries:
                 break
-
 
 def display_query_results():
     with st.expander(label="Code", expanded=False):
