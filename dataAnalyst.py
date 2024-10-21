@@ -42,7 +42,7 @@ secoda_api_key = st.secrets.secoda.SECODA_API_KEY
 
 def initialize_session_state():
     default_values = {
-        'private_key': private_key,
+        'private_key': private_key_file,
         'password': password,
         'businessQuestion': '',
         'askButton': False,
