@@ -999,7 +999,7 @@ def setup_sidebar():
         st.image("Snowflake.svg", width=75)
         load_snowflake_tables()
 
-        with st.form(key='table_selection_form'):
+        with st.form(key='table_selection_form_2'):
             # Extract the table mapping from st.secrets
             tables = st.secrets["snowflake_credentials"]["tables"]
 
