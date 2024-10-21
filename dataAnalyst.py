@@ -995,20 +995,20 @@ def setup_sidebar():
         load_snowflake_tables()
 
         with st.form(key='table_selection_form'):
-        # Display friendly names, but submit actual snowflake table name. Friendly names and snowflake table names are configured in secrets.toml                        
-        st.session_state["tables"] = st.secrets.snowflake_credentials.tables            
+            # Display friendly names, but submit actual snowflake table name. Friendly names and snowflake table names are configured in secrets.toml                        
+            st.session_state["tables"] = st.secrets.snowflake_credentials.tables            
+            
+            options = list(st.session_state["tables"].keys())
+            selected_table_labels = st.multiselect(
+                label="Choose a few tables",
+                options=options,
+                key="table_select_box"
+            )
+            selected_table_values = [value for key, value in st.session_state["tables"].items() if key in selected_table_labels]
 
-        options = list(st.session_state["tables"].keys())
-        selected_table_labels = st.multiselect(
-            label="Choose a few tables",
-            options=options,
-            key="table_select_box"
-        )
-        selected_table_values = [value for key, value in st.session_state["tables"].items() if key in selected_table_labels]
-
-        print(selected_table_values)
-        st.session_state['selectedTables'] = selected_table_values
-        st.session_state["snowflake_submit_button"] = st.form_submit_button(label='Analyze', type="secondary")
+            print(selected_table_values)
+            st.session_state['selectedTables'] = selected_table_values
+            st.session_state["snowflake_submit_button"] = st.form_submit_button(label='Analyze', type="secondary")
 
         process_table_selection()
 
