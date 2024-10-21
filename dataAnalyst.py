@@ -1000,17 +1000,29 @@ def setup_sidebar():
         load_snowflake_tables()
 
         with st.form(key='table_selection_form'):
-            # Display friendly names, but submit actual snowflake table name. Friendly names and snowflake table names are configured in secrets.toml
+            # Extract the table mapping from st.secrets
+            tables = st.secrets["snowflake_credentials"]["tables"]
+
+            # Create a list of friendly names and a corresponding dictionary for table mapping
+            friendly_names = list(tables.keys())
+            table_mapping = {friendly_name: tables[friendly_name] for friendly_name in friendly_names}
+
+            # Display friendly names in the multiselect dropdown
             selected_table_labels = st.multiselect(
                 label="Choose a few tables",
-                options=list(st.session_state["tables"].keys()),  # Friendly names
+                options=friendly_names,  # Friendly names from secrets.toml
                 key="table_select_box"
             )
-            selected_table_values = [st.session_state["tables"][label] for label in selected_table_labels]
 
-            print(selected_table_values)
+            # Submit the actual Snowflake table names based on the friendly names selected
+            selected_table_values = [table_mapping[label] for label in selected_table_labels]
+
+            print(selected_table_values)  # This will print the Snowflake table names
             st.session_state['selectedTables'] = selected_table_values
+
+            # Add the submit button
             st.session_state["snowflake_submit_button"] = st.form_submit_button(label='Analyze', type="secondary")
+
         process_table_selection()
 
         st.image("csv_File_Logo.svg", width=45)
