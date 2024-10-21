@@ -39,12 +39,6 @@ role = st.secrets.snowflake_credentials.role
 secoda_api_endpoint = st.secrets.secoda.SECODA_API_ENDPOINT
 secoda_api_key = st.secrets.secoda.SECODA_API_KEY
 
-# Load the private key
-private_key = serialization.load_pem_private_key(
-    private_key_str.encode(),
-    password=None,
-)
-
 
 def initialize_session_state():
     default_values = {
